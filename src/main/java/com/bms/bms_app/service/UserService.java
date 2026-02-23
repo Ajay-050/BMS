@@ -1,7 +1,11 @@
 package com.bms.bms_app.service;
 
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.bms.bms_app.dto.LoginRequest;
+import com.bms.bms_app.dto.RegisterRequest;
 import com.bms.bms_app.dto.UserRequest;
 import com.bms.bms_app.dto.UserResponse;
 import com.bms.bms_app.exception.ResourceNotFoundException;
@@ -13,9 +17,11 @@ import com.bms.bms_app.repository.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     private UserResponse mapToResponse(User user) {
@@ -82,4 +88,36 @@ public class UserService {
         
     }
 
+    public UserResponse register(RegisterRequest registerRequest) {
+
+        User user = User.builder()
+                .name(registerRequest.getName())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role(registerRequest.getRole())
+                .phone(registerRequest.getPhone())
+                .status("ACTIVE")
+                .build();
+
+        User saved = userRepository.save(user);
+
+        return mapToResponse(saved);
+    }
+
+    public String login(LoginRequest loginRequest) {
+
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() ->
+                    new ResourceNotFoundException("User not found with email: " + loginRequest.getEmail())
+                );
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
+        return "Login successful";
+    }
 }
