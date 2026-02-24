@@ -10,12 +10,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.bms.bms_app.dto.ApiResponse;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     // Handle Validation Errors
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String,Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
 
         Map<String, String> errors = new HashMap<>();
 
@@ -23,29 +25,22 @@ public class GlobalExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage());
         });
 
-        Map<String, Object> response = new HashMap<>();
+        ApiResponse<Object> response = new ApiResponse<>(false, "Validation failed", errors);
 
-        response.put("status", Response.SC_BAD_REQUEST);
-        response.put("message", "Validation Failed");
-        response.put("errors", errors);
-
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
     // Handle Resource Not Found
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(false, ex.getMessage(), null);
 
-        response.put("status", Response.SC_NOT_FOUND);
-        response.put("message", ex.getMessage());
-
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     // Handle Data Integrity Violations (e.g., duplicate email)
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(Exception ex) {
+    public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolation(Exception ex) {
 
         String message = ex.getCause().getMessage();
 
@@ -59,22 +54,26 @@ public class GlobalExceptionHandler {
             error = "Duplicate or invalid data";
         }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", HttpStatus.CONFLICT.value());
-        response.put("message", error);
+        ApiResponse<Object> response = new ApiResponse<>(false, error, null);
 
-        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
+
+    // Handle Invalid Credentials
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiResponse<Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        ApiResponse<Object> response = new ApiResponse<>(false, ex.getMessage(), null);
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
 
     // Handle Generic Exceptions
     @ExceptionHandler(Exception.class)  
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+        ApiResponse<Object> response = new ApiResponse<>(false, "An unexpected error occurred", null);
 
-        response.put("status", Response.SC_INTERNAL_SERVER_ERROR);
-        response.put("message", "An unexpected error occurred");
-
-        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
 }

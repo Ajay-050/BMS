@@ -5,9 +5,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.bms.bms_app.dto.LoginRequest;
+import com.bms.bms_app.dto.LoginResponse;
 import com.bms.bms_app.dto.RegisterRequest;
 import com.bms.bms_app.dto.UserRequest;
 import com.bms.bms_app.dto.UserResponse;
+import com.bms.bms_app.exception.InvalidCredentialsException;
 import com.bms.bms_app.exception.ResourceNotFoundException;
 import com.bms.bms_app.model.User;
 import com.bms.bms_app.repository.UserRepository;
@@ -38,7 +40,7 @@ public class UserService {
     }
 
     // CREATE
-    public UserResponse creatUser(UserRequest userRequest) {
+    public UserResponse createUser(UserRequest userRequest) {
         User user = User.builder()
                 .name(userRequest.getName())
                 .email(userRequest.getEmail())
@@ -104,7 +106,7 @@ public class UserService {
         return mapToResponse(saved);
     }
 
-    public String login(LoginRequest loginRequest) {
+    public LoginResponse login(LoginRequest loginRequest) {
 
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() ->
@@ -112,12 +114,16 @@ public class UserService {
                 );
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         user.setLastLogin(java.time.LocalDateTime.now());
         userRepository.save(user);
 
-        return "Login successful";
+        return LoginResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .build();
     }
 }

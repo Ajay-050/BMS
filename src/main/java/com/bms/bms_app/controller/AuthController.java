@@ -1,11 +1,15 @@
 package com.bms.bms_app.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.bms.bms_app.dto.ApiResponse;
 import com.bms.bms_app.dto.LoginRequest;
+import com.bms.bms_app.dto.LoginResponse;
 import com.bms.bms_app.dto.RegisterRequest;
 import com.bms.bms_app.dto.UserResponse;
 import com.bms.bms_app.service.UserService;
@@ -23,12 +27,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public UserResponse register(@Valid @RequestBody RegisterRequest registerRequest) {
-        return userService.register(registerRequest);
+    public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterRequest registerRequest) {
+
+        UserResponse response = userService.register(registerRequest);
+
+        ApiResponse<UserResponse> apiResponse = new ApiResponse<>(true, "User registered successfully", response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
     }
 
     @PostMapping("/login")
-    public String login(@Valid @RequestBody LoginRequest loginRequest) {
-        return userService.login(loginRequest);
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
+
+        LoginResponse response = userService.login(loginRequest);
+
+        ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(true, "Login successful", response);
+        return ResponseEntity.ok(apiResponse);
     }
 }
