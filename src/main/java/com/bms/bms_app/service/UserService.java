@@ -13,6 +13,7 @@ import com.bms.bms_app.exception.InvalidCredentialsException;
 import com.bms.bms_app.exception.ResourceNotFoundException;
 import com.bms.bms_app.model.User;
 import com.bms.bms_app.repository.UserRepository;
+import com.bms.bms_app.security.JwtUtil;
 
 
 @Service
@@ -20,10 +21,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository,BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository,BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     private UserResponse mapToResponse(User user) {
@@ -113,6 +116,8 @@ public class UserService {
                     new ResourceNotFoundException("User not found with email: " + loginRequest.getEmail())
                 );
 
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
+
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid credentials");
         }
@@ -124,6 +129,7 @@ public class UserService {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .token(token)
                 .build();
     }
 }
