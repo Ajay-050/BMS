@@ -1,7 +1,6 @@
 package com.bms.bms_app.service;
 
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.bms.bms_app.dto.LoginRequest;
@@ -15,15 +14,14 @@ import com.bms.bms_app.model.User;
 import com.bms.bms_app.repository.UserRepository;
 import com.bms.bms_app.security.JwtUtil;
 
-
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository,BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
@@ -53,13 +51,10 @@ public class UserService {
                 .status("ACTIVE")
                 .build();
 
-
-        User saved =  userRepository.save(user);
+        User saved = userRepository.save(user);
 
         return mapToResponse(saved);
     }
-
-
 
     // GET ALL
     public Iterable<UserResponse> getAllUsers() {
@@ -67,15 +62,17 @@ public class UserService {
     }
 
     // GET BY ID
-    public UserResponse getUserById(Long id) {  
-        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return mapToResponse(user);
-    }       
+    }
 
     // UPDATE
-    public UserResponse updateUser(Long id, UserRequest userRequest) { 
+    public UserResponse updateUser(Long id, UserRequest userRequest) {
 
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         existingUser.setName(userRequest.getName());
         existingUser.setEmail(userRequest.getEmail());
@@ -88,9 +85,10 @@ public class UserService {
     // DELETE
     public void deleteUser(Long id) {
 
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         userRepository.delete(existingUser);
-        
+
     }
 
     public UserResponse register(RegisterRequest registerRequest) {
@@ -112,9 +110,8 @@ public class UserService {
     public LoginResponse login(LoginRequest loginRequest) {
 
         User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() ->
-                    new ResourceNotFoundException("User not found with email: " + loginRequest.getEmail())
-                );
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("User not found with email: " + loginRequest.getEmail()));
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
 
