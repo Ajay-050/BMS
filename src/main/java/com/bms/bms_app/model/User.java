@@ -27,8 +27,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role; // ADMIN, STAFF, USER
+    private Role role; // ENUM
 
     @Column(nullable = false)
     private String status; // ACTIVE, INACTIVE, BLOCKED

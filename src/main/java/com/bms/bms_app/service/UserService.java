@@ -1,5 +1,7 @@
 package com.bms.bms_app.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -10,12 +12,15 @@ import com.bms.bms_app.dto.UserRequest;
 import com.bms.bms_app.dto.UserResponse;
 import com.bms.bms_app.exception.InvalidCredentialsException;
 import com.bms.bms_app.exception.ResourceNotFoundException;
+import com.bms.bms_app.model.Role;
 import com.bms.bms_app.model.User;
 import com.bms.bms_app.repository.UserRepository;
 import com.bms.bms_app.security.JwtUtil;
 
 @Service
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -32,7 +37,7 @@ public class UserService {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
-                .role(user.getRole())
+                .role(user.getRole().name())
                 .phone(user.getPhone())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
@@ -42,53 +47,69 @@ public class UserService {
 
     // CREATE
     public UserResponse createUser(UserRequest userRequest) {
+        log.debug("Creating user with email={}", userRequest.getEmail());
+
         User user = User.builder()
                 .name(userRequest.getName())
                 .email(userRequest.getEmail())
                 .password(userRequest.getPassword())
-                .role(userRequest.getRole())
+                .role(Role.valueOf(userRequest.getRole().toUpperCase()))
                 .phone(userRequest.getPhone())
                 .status("ACTIVE")
                 .build();
 
         User saved = userRepository.save(user);
 
+        log.info("Created user id={} email={}", saved.getId(), saved.getEmail());
         return mapToResponse(saved);
     }
 
     // GET ALL
     public Iterable<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream().map(this::mapToResponse).toList();
+        log.debug("Fetching all users");
+        Iterable<UserResponse> users = userRepository.findAll().stream().map(this::mapToResponse).toList();
+        log.info("Fetched {} users", (users instanceof java.util.Collection ? ((java.util.Collection<?>) users).size() : "(unknown)"));
+        return users;
     }
 
     // GET BY ID
     public UserResponse getUserById(Long id) {
+        log.debug("Fetching user by id={}", id);
+
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        log.info("Found user id={} email={}", user.getId(), user.getEmail());
         return mapToResponse(user);
     }
 
     // UPDATE
     public UserResponse updateUser(Long id, UserRequest userRequest) {
+        log.debug("Updating user id={}", id);
 
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         existingUser.setName(userRequest.getName());
         existingUser.setEmail(userRequest.getEmail());
-        existingUser.setRole(userRequest.getRole());
+        existingUser.setRole(Role.valueOf(userRequest.getRole().toUpperCase()));
         existingUser.setPhone(userRequest.getPhone());
 
-        return mapToResponse(userRepository.save(existingUser));
+        User updated = userRepository.save(existingUser);
+        log.info("Updated user id={} email={}", updated.getId(), updated.getEmail());
+        return mapToResponse(updated);
     }
 
     // DELETE
     public void deleteUser(Long id) {
+        log.debug("Deleting user with id={}", id);
 
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
         userRepository.delete(existingUser);
 
+        log.info("Deleted user with id={}", id);
     }
 
     public UserResponse register(RegisterRequest registerRequest) {
@@ -97,7 +118,7 @@ public class UserService {
                 .name(registerRequest.getName())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(registerRequest.getRole())
+                .role(Role.USER)
                 .phone(registerRequest.getPhone())
                 .status("ACTIVE")
                 .build();
@@ -113,7 +134,7 @@ public class UserService {
                 .orElseThrow(
                         () -> new ResourceNotFoundException("User not found with email: " + loginRequest.getEmail()));
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid credentials");

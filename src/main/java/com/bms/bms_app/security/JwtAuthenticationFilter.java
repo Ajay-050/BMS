@@ -1,12 +1,14 @@
 package com.bms.bms_app.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.bms.bms_app.model.User;
 import com.bms.bms_app.repository.UserRepository;
 
 
@@ -19,12 +21,14 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter{
 
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
+    private final JwtUtil jwtUtil;
+    private final CustomUserDetailsService userDetailsService;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository, CustomUserDetailsService userDetailsService) {
         this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
+        this.userDetailsService = userDetailsService;
     }
 
 
@@ -33,27 +37,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
                                  FilterChain filterChain) 
                                 throws IOException, ServletException {
         
+        log.debug("Incoming request: {} {}", request.getMethod(), request.getRequestURI());
+
         String token = null;
         String email = null;
 
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            email = jwtUtil.extractEmail(token);
+
+            try {
+                email = jwtUtil.extractEmail(token);
+                log.debug("Found bearer token. extracted email={}", email);
+            } catch (io.jsonwebtoken.JwtException e) {
+                log.warn("JWT parse/validation failed: {}", e.getMessage());
+            }
+        } else {
+            log.debug("No bearer token found in Authorization header");
         }
         
-        if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            User user = userRepository.findByEmail(email).orElse(null);
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if(user != null &&jwtUtil.validateToken(token)) {
-                UsernamePasswordAuthenticationToken authToken =
-                     new UsernamePasswordAuthenticationToken(
-                            user, 
-                            null, 
-                            null
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+            UserDetails user = userDetailsService.loadUserByUsername(email);
+
+            try {
+                if (user != null && jwtUtil.validateToken(token)) {
+                    log.debug("JWT validated, setting authentication for email={}", email);
+
+                    UsernamePasswordAuthenticationToken authToken =
+                         new UsernamePasswordAuthenticationToken(
+                                user, 
+                                null, 
+                                user.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    log.warn("JWT validation failed for email={}", email);
+                }
+            } catch (io.jsonwebtoken.JwtException e) {
+                log.warn("JWT validation failed for email={} : {}", email, e.getMessage());
             }
         }
         
