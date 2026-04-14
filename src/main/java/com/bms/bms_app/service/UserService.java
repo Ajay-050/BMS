@@ -52,12 +52,11 @@ public class UserService {
         User user = User.builder()
                 .name(userRequest.getName())
                 .email(userRequest.getEmail())
-                .password(userRequest.getPassword())
+                .password(passwordEncoder.encode(userRequest.getPassword()))
                 .role(Role.valueOf(userRequest.getRole().toUpperCase()))
                 .phone(userRequest.getPhone())
                 .status("ACTIVE")
                 .build();
-
         User saved = userRepository.save(user);
 
         log.info("Created user id={} email={}", saved.getId(), saved.getEmail());
@@ -147,6 +146,7 @@ public class UserService {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .role(user.getRole().name())
                 .token(token)
                 .build();
     }

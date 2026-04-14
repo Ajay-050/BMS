@@ -2,8 +2,7 @@ package com.bms.bms_app.dto;
 
 import jakarta.validation.constraints.*;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter

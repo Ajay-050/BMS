@@ -37,6 +37,7 @@ public class UserController {
 
     // CREATE
     @PostMapping()
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody UserRequest userRequest) {
         UserResponse userResponse = userService.createUser(userRequest);
         ApiResponse<UserResponse> response = new ApiResponse<>(true, "User created successfully", userResponse);
@@ -66,7 +67,8 @@ public class UserController {
     }
 
     // UPDATE
-    @PutMapping("/{id}")       
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")       
     public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable Long id,@Valid @RequestBody UserRequest userRequest) {
         UserResponse userResponse = userService.updateUser(id, userRequest);
         ApiResponse<UserResponse> response = new ApiResponse<>(true, "User updated successfully", userResponse);

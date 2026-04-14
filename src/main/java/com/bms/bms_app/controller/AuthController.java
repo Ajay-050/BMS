@@ -40,6 +40,11 @@ public class AuthController {
 
         LoginResponse response = userService.login(loginRequest);
 
+        if ("ADMIN".equalsIgnoreCase(response.getRole())) {
+            ApiResponse<LoginResponse> errorResponse = new ApiResponse<>(false, "Admins should use /admin/login", null);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        }
+
         ApiResponse<LoginResponse> apiResponse = new ApiResponse<>(true, "Login successful", response);
         return ResponseEntity.ok(apiResponse);
     }

@@ -39,6 +39,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         
         log.debug("Incoming request: {} {}", request.getMethod(), request.getRequestURI());
 
+        // Skip JWT filter for /admin/** paths
+        // String requestURI = request.getRequestURI();
+        // if (requestURI.startsWith("/admin/")) {
+        //     log.debug("Skipping JWT filter for admin endpoint: {}", requestURI);
+        //     filterChain.doFilter(request, response);
+        //     return;
+        // }
+
         String token = null;
         String email = null;
 

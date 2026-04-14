@@ -5,12 +5,12 @@ import lombok.*;
 @Getter
 @Setter
 @Builder
-public class LoginResponse {
-
+public class ProductResponse {
+    
     private Long id;
     private String name;
-    private String email;
-    private String role;
-    private String token;
+    private double price;
+    private String description;
+    private int stock;
 
 }
