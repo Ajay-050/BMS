@@ -66,6 +66,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
+    // Handle Authorization Excpetions
+    @ExceptionHandler(org.springframework.security.authorization.AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDenied(
+            org.springframework.security.authorization.AuthorizationDeniedException ex) {
+
+        ApiResponse<Object> response =
+                new ApiResponse<>(false, "Access denied: " + ex.getMessage(), null);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedLegacy(
+            org.springframework.security.access.AccessDeniedException ex) {
+
+        ApiResponse<Object> response =
+                new ApiResponse<>(false, "Access denied", null);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
 
     // Handle Generic Exceptions
     @ExceptionHandler(Exception.class)  
@@ -74,5 +95,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+
+
 
 }

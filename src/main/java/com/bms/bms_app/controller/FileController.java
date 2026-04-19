@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +30,7 @@ public class FileController {
     private FileRepository fileRepository;
 
     @PostMapping("/upload")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("relatedId") Long relatedId) {
@@ -43,6 +45,7 @@ public class FileController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getFile(@PathVariable Long id) {
 
         FileResponse response = fileService.getFile(id);
@@ -53,6 +56,7 @@ public class FileController {
     }
 
     @GetMapping("/download/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> downloadFile(@PathVariable Long id) throws IOException {
 
         byte[] FileData = fileService.downloadFile(id);
@@ -63,6 +67,7 @@ public class FileController {
     }
 
     @DeleteMapping("/remove/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> removeFile(@PathVariable Long id) {
 
         fileService.deleteFile(id);
